@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Card</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Your Card</h1>
+    {% if card %}
+        <div class="card">
+            <h2>{{ card.title }}</h2>
+            <p>{{ card.description }}</p>
+        </div>
+    {% else %}
+        <p>You do not have a card yet. </p>
+        <p>The game master will distribute a card to you when everyone is ready.</p>
+    {% endif %}
+    <script src="/static/script.js"></script>
+</body>
+</html>

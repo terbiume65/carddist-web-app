@@ -1,0 +1,47 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+form {
+    margin-bottom: 20px;
+}
+
+/* Styling for buttons */
+button {
+    background-color: #4CAF50; /* Green background */
+    border: none; /* Remove borders */
+    color: white; /* White text */
+    padding: 15px 32px; /* Some padding */
+    text-align: center; /* Centered text */
+    text-decoration: none; /* Remove underline */
+    display: inline-block; /* Make the buttons appear side by side */
+    font-size: 16px; /* Increase font size */
+    margin: 4px 2px; /* Some margin */
+    cursor: pointer; /* Pointer/hand icon */
+    border-radius: 4px; /* Rounded corners */
+}
+
+/* Styling for textboxes */
+input[type="text"], input[type="email"], input[type="password"], textarea {
+    width: 100%; /* Full width */
+    padding: 12px 20px; /* Some padding */
+    margin: 8px 0; /* Some margin */
+    display: inline-block; /* Keep the elements inline */
+    border: 1px solid #ccc; /* Gray border */
+    border-radius: 4px; /* Rounded corners */
+    box-sizing: border-box; /* Make sure that padding and width stays in place */
+}
+
+.card {
+    padding: 20px;
+    margin: 10px 0;
+    color: white;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 18px;
+}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Admin Panel</h1>
+    
+    <h2>Users</h2>
+    <ul>
+        {% for user, card in users.items() %}
+            <li>{{ user }}: {{ card.title if card else 'No card assigned' }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Current Card Pool</h2>
+    <ul>
+        {% for card in card_pool %}
+            <li>{{ card.title }}: {{ card.description }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Add Card</h2>
+    <form action="/add_card" method="post">
+        <input type="text" name="title" placeholder="Card Title" required>
+        <input type="text" name="description" placeholder="Card Description" required>
+        <button type="submit">Add Card</button>
+    </form>
+
+    <h2>Distribute Cards</h2>
+    <form action="/distribute_cards" method="get">
+        <button type="submit">Distribute Cards</button>
+    </form>
+
+    <h2>Delete Card</h2>
+    <form action="/delete_card" method="post">
+        <input type="text" name="title" placeholder="Card Title to Delete" required>
+        <button type="submit">Delete Card</button>
+    </form>
+</body>
+</html>
