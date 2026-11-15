@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Card table{% endblock %}
+
+{% block content %}
+<div class="player" id="player" data-state='{{ state|tojson }}'>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="pip" aria-hidden="true">🃏</span>
+      <div>
+        <p class="kicker">Card table</p>
+        <p class="round" id="round-line">Round {{ state.round }}</p>
+      </div>
+    </div>
+    <form method="post" action="{{ url_for('leave') }}" id="leave-form" {% if not state.joined %}hidden{% endif %}>
+      <button class="linkish" type="submit" title="Leave the table and free your card">Leave</button>
+    </form>
+  </header>
+
+  <section class="panel" id="panel-join" {% if state.joined %}hidden{% endif %}>
+    <h1>Join the table</h1>
+    <p class="muted">
+      Pick the name your friends will recognise. When the game master deals, your card appears here —
+      on this phone only.
+    </p>
+    <form method="post" action="{{ url_for('join') }}" class="stack-form">
+      <label for="name">Your name</label>
+      <input id="name" name="name" maxlength="24" autocomplete="nickname"
+             autocapitalize="words" spellcheck="false" required placeholder="e.g. Toby">
+      <button class="btn primary wide" type="submit">Sit down</button>
+    </form>
+    {% if deck %}
+      <p class="footnote">{{ deck }} card{{ 's' if deck != 1 }} waiting in the deck.</p>
+    {% endif %}
+  </section>
+
+  <section class="hand" id="panel-hand" {% if not state.joined %}hidden{% endif %}>
+    <p class="who">You're at the table as <strong id="player-name">{{ state.name }}</strong>.</p>
+
+    <div class="state" id="hand-waiting" {% if not (state.joined and state.phase == 'lobby') %}hidden{% endif %}>
+      <div class="waiting">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+      <h2>Waiting for the deal</h2>
+      <p class="muted">The game master will deal the cards in a moment. This page updates by itself.</p>
+    </div>
+
+    <div class="state" id="hand-none" {% if not (state.joined and state.phase == 'dealt' and not state.has_card) %}hidden{% endif %}>
+      <h2>No card this round</h2>
+      <p class="muted">
+        The deck ran out before your turn. If more cards turn up, the game master can deal you one —
+        otherwise you're in for the next round.
+      </p>
+    </div>
+
+    <div class="state" id="hand-back" {% if not (state.joined and state.phase == 'dealt' and state.has_card and not state.revealed) %}hidden{% endif %}>
+      <p class="muted center">Your card is ready. Make sure nobody is looking over your shoulder.</p>
+      <form method="post" action="{{ url_for('reveal') }}" id="reveal-form">
+        <button class="card card-back" type="submit" aria-label="Reveal my card">
+          <span class="back-mark" aria-hidden="true">🂠</span>
+          <span class="back-label">Tap to reveal</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="state" id="hand-front" {% if not (state.joined and state.phase == 'dealt' and state.has_card and state.revealed) %}hidden{% endif %}>
+      <article class="card card-front" id="card-front">
+        <p class="card-round">Round <span id="card-round">{{ state.round }}</span></p>
+        <h2 class="card-title" id="card-title">{{ state.card.title if state.card else 'Your card' }}</h2>
+        <p class="card-desc" id="card-desc">{{ state.card.description if state.card else '' }}</p>
+        <p class="card-foot">Keep this to yourself.</p>
+      </article>
+      <p class="muted center">This card stays on your phone until the next round.</p>
+    </div>
+  </section>
+
+  <footer class="player-foot">
+    <span>Hosted on your home network.</span>
+    <a href="{{ url_for('admin_login') }}">Game master</a>
+  </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='player.js') }}" defer></script>
+{% endblock %}

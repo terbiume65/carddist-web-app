@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Game master — sign in{% endblock %}
+
+{% block content %}
+<div class="narrow">
+  <header class="topbar">
+    <div class="brand">
+      <span class="pip" aria-hidden="true">🃏</span>
+      <div>
+        <p class="kicker">Card table</p>
+        <p class="round">Game master</p>
+      </div>
+    </div>
+    <a class="linkish" href="{{ url_for('index') }}">Player view</a>
+  </header>
+
+  <section class="panel">
+    <h1>Enter the PIN</h1>
+    <p class="muted">
+      The admin panel can see every card, so it is protected by a PIN. It is set with the
+      <code>ADMIN_PIN</code> environment variable; if you did not set one, the PIN was printed in the
+      server log when it started.
+    </p>
+    <form method="post" class="stack-form">
+      <label for="pin">Admin PIN</label>
+      <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password"
+             autofocus required placeholder="••••••">
+      <button class="btn primary wide" type="submit">Unlock the panel</button>
+    </form>
+  </section>
+
+  <footer class="player-foot">
+    <span>Hosted on your home network.</span>
+    <a href="{{ url_for('index') }}">Back to the table</a>
+  </footer>
+</div>
+{% endblock %}

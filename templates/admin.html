@@ -1,44 +1,190 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <h1>Admin Panel</h1>
-    
-    <h2>Users</h2>
-    <ul>
-        {% for user, card in users.items() %}
-            <li>{{ user }}: {{ card.title if card else 'No card assigned' }}</li>
-        {% endfor %}
+{% extends "base.html" %}
+{% block title %}Game master — card table{% endblock %}
+
+{% block content %}
+<div class="admin" id="admin">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="pip" aria-hidden="true">🃏</span>
+      <div>
+        <p class="kicker">Card table</p>
+        <p class="round">Game master</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <a class="linkish" href="{{ url_for('index') }}" target="_blank" rel="noopener">Player view</a>
+      <form method="post" action="{{ url_for('admin_logout') }}">
+        <button class="linkish" type="submit">Sign out</button>
+      </form>
+    </div>
+  </header>
+
+  <section class="status" aria-live="polite">
+    <div class="status-main">
+      <p class="status-phase" id="status-phase">
+        {% if game.phase == 'lobby' %}Lobby · waiting to deal{% else %}Cards dealt{% endif %}
+      </p>
+      <p class="status-round" id="status-round">Round {{ game.round }}</p>
+    </div>
+    <dl class="counts">
+      <div><dt>Players</dt><dd id="count-players">{{ players|length }}</dd></div>
+      <div><dt>Cards</dt><dd id="count-cards">{{ deck_total }}</dd></div>
+      <div><dt>Reserve</dt><dd id="count-reserve">{{ stash }}</dd></div>
+    </dl>
+  </section>
+
+  <p class="warn" id="short-warning" {% if deck_total >= players|length and deck_total > 0 %}hidden{% endif %}>
+    {% if deck_total == 0 %}
+      The deck is empty. Add cards below before dealing.
+    {% else %}
+      Fewer cards than players — somebody will go without. Add cards or reduce quantities.
+    {% endif %}
+  </p>
+
+  <section class="panel actions">
+    <h2>Round controls</h2>
+    <div class="button-row">
+      <form method="post" action="{{ url_for('deal') }}">
+        <button class="btn primary" type="submit" id="deal-button" {% if game.phase != 'lobby' %}disabled{% endif %}>
+          Deal the cards
+        </button>
+      </form>
+
+      <form method="post" action="{{ url_for('deal_late') }}">
+        <button class="btn" type="submit" {% if game.phase != 'dealt' %}disabled{% endif %}>
+          Deal to latecomers
+        </button>
+      </form>
+
+      <form method="post" action="{{ url_for('new_round') }}" data-confirm="Return every card and start the next round?">
+        <button class="btn" type="submit">New round</button>
+      </form>
+
+      <form method="post" action="{{ url_for('clear_players') }}" data-confirm="Remove every player from the table? The deck is kept.">
+        <button class="btn danger" type="submit">Clear players</button>
+      </form>
+    </div>
+    <p class="hint">
+      Dealing gives each player one random card and never repeats a card within the round.
+      “New round” takes the cards back and moves everyone to the lobby.
+    </p>
+  </section>
+
+  <section class="panel" id="share">
+    <h2>Let people in</h2>
+    <div class="share-grid">
+      <div>
+        <p class="muted">Everyone on the same Wi-Fi opens this address:</p>
+        <p class="url"><a href="{{ player_url }}" target="_blank" rel="noopener">{{ player_url }}</a></p>
+        <div class="button-row">
+          <button class="btn small" type="button" id="copy-url" data-url="{{ player_url }}">Copy link</button>
+          <a class="btn small" href="{{ player_url }}" target="_blank" rel="noopener">Open</a>
+        </div>
+        {% if player_url.startswith('http://localhost') or player_url.startswith('http://127.') %}
+          <p class="warn">
+            This looks like the local address — phones cannot reach it. Open the panel using your
+            machine's LAN IP, or set <code>PUBLIC_URL</code>.
+          </p>
+        {% endif %}
+      </div>
+      <div class="qr">
+        {% if qr %}
+          <img src="{{ qr }}" alt="QR code for {{ player_url }}" width="176" height="176" loading="lazy">
+          <p class="muted small">Scan to join</p>
+        {% else %}
+          <p class="muted small">Install <code>segno</code> to get a QR code here.</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="players">
+    <h2>At the table <span class="badge" id="players-badge">{{ players|length }}</span></h2>
+    <ul class="player-list" id="player-list">
+      {% for player in players %}
+        <li data-player="{{ player.id }}">
+          <div class="player-name">
+            <strong>{{ player.name }}</strong>
+            {% if player.card_title %}
+              <span class="tag">{{ player.card_title }}</span>
+              {% if player.revealed %}<span class="tag soft">seen</span>{% else %}<span class="tag soft">face down</span>{% endif %}
+            {% else %}
+              <span class="tag ghost">waiting</span>
+            {% endif %}
+          </div>
+          <form method="post" action="{{ url_for('remove_player', player_id=player.id) }}"
+                data-confirm="Remove {{ player.name }} from the table?">
+            <button class="linkish danger-text" type="submit" aria-label="Remove {{ player.name }}">Remove</button>
+          </form>
+        </li>
+      {% else %}
+        <li class="empty">Nobody has joined yet — share the link above.</li>
+      {% endfor %}
     </ul>
+    {% if game.phase == 'dealt' and waiting %}
+      <p class="hint">
+        {{ waiting }} player{{ 's' if waiting != 1 }} without a card. Use “Deal to latecomers” if
+        there are reserve cards left.
+      </p>
+    {% endif %}
+  </section>
 
-    <h2>Current Card Pool</h2>
-    <ul>
-        {% for card in card_pool %}
-            <li>{{ card.title }}: {{ card.description }}</li>
+  <section class="panel" id="deck">
+    <h2>The deck <span class="badge">{{ deck_total }} cards</span></h2>
+
+    {% if cards %}
+      <div class="deck-list">
+        {% for card in cards %}
+          <form class="deck-row" method="post" action="{{ url_for('edit_card', card_id=card.id) }}">
+            <div class="deck-fields">
+              <label class="sr-only" for="title-{{ card.id }}">Title</label>
+              <input id="title-{{ card.id }}" name="title" value="{{ card.title }}" maxlength="40" required>
+              <label class="sr-only" for="desc-{{ card.id }}">Description</label>
+              <input id="desc-{{ card.id }}" name="description" value="{{ card.description }}" maxlength="400" placeholder="Description">
+            </div>
+            <div class="deck-side">
+              <label class="sr-only" for="qty-{{ card.id }}">Quantity</label>
+              <input id="qty-{{ card.id }}" class="qty" name="quantity" type="number" min="1" max="99" value="{{ card.quantity }}" required>
+              <button class="btn small" type="submit">Save</button>
+              <button class="linkish danger-text" type="submit" formaction="{{ url_for('delete_card', card_id=card.id) }}"
+                      data-confirm="Delete {{ card.title }} from the deck?">Delete</button>
+            </div>
+          </form>
         {% endfor %}
-    </ul>
+      </div>
+      <p class="hint">Edit a row and press Save. Quantity is how many copies of that card the deck holds.</p>
+    {% else %}
+      <p class="muted">No cards yet. Add your first one below — for Werewolf that might be 8 × Villager, 2 × Werewolf, 1 × Seer.</p>
+    {% endif %}
 
-    <h2>Add Card</h2>
-    <form action="/add_card" method="post">
-        <input type="text" name="title" placeholder="Card Title" required>
-        <input type="text" name="description" placeholder="Card Description" required>
-        <button type="submit">Add Card</button>
+    <form class="add-card" method="post" action="{{ url_for('add_card') }}">
+      <h3>Add a card</h3>
+      <div class="add-grid">
+        <div>
+          <label for="new-title">Title</label>
+          <input id="new-title" name="title" maxlength="40" required placeholder="Werewolf">
+        </div>
+        <div>
+          <label for="new-desc">Description</label>
+          <input id="new-desc" name="description" maxlength="400" placeholder="You are a Werewolf.">
+        </div>
+        <div class="narrow-field">
+          <label for="new-qty">Quantity</label>
+          <input id="new-qty" name="quantity" type="number" min="1" max="99" value="1" required>
+        </div>
+      </div>
+      <button class="btn primary" type="submit">Add to deck</button>
     </form>
+  </section>
 
-    <h2>Distribute Cards</h2>
-    <form action="/distribute_cards" method="get">
-        <button type="submit">Distribute Cards</button>
-    </form>
+  <footer class="player-foot">
+    <span>Card table · local network only</span>
+    <a href="{{ url_for('index') }}">Player view</a>
+  </footer>
+</div>
+{% endblock %}
 
-    <h2>Delete Card</h2>
-    <form action="/delete_card" method="post">
-        <input type="text" name="title" placeholder="Card Title to Delete" required>
-        <button type="submit">Delete Card</button>
-    </form>
-</body>
-</html>
+{% block scripts %}
+<script src="{{ url_for('static', filename='admin.js') }}" defer></script>
+{% endblock %}
