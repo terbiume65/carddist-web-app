@@ -1,0 +1,17 @@
+services:
+  card-table:
+    build: .
+    image: card-table:2
+    container_name: card-table
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Set these in a .env file next to this one (see .env.example).
+      ADMIN_PIN: "${ADMIN_PIN:?set ADMIN_PIN in .env}"
+      SECRET_KEY: "${SECRET_KEY:-}"
+      TZ: "${TZ:-Asia/Hong_Kong}"
+      # Uncomment and set if the auto-detected LAN address is wrong:
+      # PUBLIC_URL: "http://192.168.1.50:8080"
+    volumes:
+      - ./data:/data
